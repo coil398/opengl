@@ -162,7 +162,7 @@ fn main() {
 
             let ui = imgui_context.frame();
 
-            imgui::Window::new(imgui::ImStr::from_cstr_unchecked(c_str!("Information")))
+            imgui::Window::new(imgui::im_str!("Information"))
                 .size([300.0, 200.0], imgui::Condition::FirstUseEver)
                 .build(&ui, || {});
 
