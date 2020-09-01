@@ -21,10 +21,10 @@ type Vector3 = cgmath::Vector3<f32>;
 #[allow(dead_code)]
 type Matrix4 = cgmath::Matrix4<f32>;
 
-const WINDOW_WIDTH: u32 = 640;
+const WINDOW_WIDTH: u32 = 900;
 const WINDOW_HEIGHT: u32 = 480;
 const FLOAT_NUM: usize = 3;
-const VERTEX_NUM: usize = 3;
+const VERTEX_NUM: usize = 36;
 const BUF_LEN: usize = FLOAT_NUM * VERTEX_NUM;
 
 fn main() {
@@ -56,9 +56,53 @@ fn main() {
 
     #[rustfmt::skip]
     let buffer_array: [f32; BUF_LEN] = [
-        -1.0, -1.0, 0.0,
-        1.0, -1.0, 0.0,
+        0.0, 0.0, 0.0,
         0.0, 1.0, 0.0,
+        1.0, 1.0, 0.0,
+
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 0.0,
+        1.0, 0.0, 0.0,
+
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0,
+        1.0, 0.0, 0.0,
+
+        0.0, 0.0, 1.0,
+        1.0, 0.0, 0.0,
+        1.0, 0.0, 1.0,
+
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 1.0,
+        1.0, 0.0, 1.0,
+
+        0.0, 1.0, 1.0,
+        1.0, 0.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        0.0, 1.0, 0.0,
+        0.0, 1.0, 1.0,
+        1.0, 1.0, 1.0,
+
+        0.0, 1.0, 0.0,
+        1.0, 1.0, 1.0,
+        1.0, 1.0, 0.0,
+
+        1.0, 0.0, 1.0,
+        1.0, 0.0, 0.0,
+        1.0, 1.0, 0.0,
+
+        1.0, 0.0, 1.0,
+        1.0, 1.0, 0.0,
+        1.0, 1.0, 1.0,
+
+        0.0, 1.0, 1.0,
+        0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0,
+
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 1.0
     ];
 
     unsafe {
@@ -96,6 +140,14 @@ fn main() {
         video_subsystem.gl_get_proc_address(s) as _
     });
 
+    let mut depth_test: bool = true;
+    let mut blend: bool = true;
+    let mut wireframe: bool = true;
+    let mut culling: bool = true;
+    let mut camera_x: f32 = 5.0f32;
+    let mut camera_y: f32 = -5.0f32;
+    let mut camera_z: f32 = 5.0f32;
+
     let mut event_pump = sdl_context.event_pump().unwrap();
     'running: loop {
         for event in event_pump.poll_iter() {
@@ -115,27 +167,52 @@ fn main() {
         }
 
         unsafe {
+            if depth_test {
+                gl::Enable(gl::DEPTH_TEST);
+            } else {
+                gl::Disable(gl::DEPTH_TEST);
+            }
+
+            if blend {
+                gl::Enable(gl::BLEND);
+                gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            } else {
+                gl::Disable(gl::BLEND);
+            }
+
+            if wireframe {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            } else {
+                gl::PolygonMode(gl::FRONT_AND_BACK, gl::FILL);
+            }
+
+            if culling {
+                gl::Enable(gl::CULL_FACE);
+            } else {
+                gl::Disable(gl::CULL_FACE);
+            }
+
             gl::Viewport(0, 0, WINDOW_WIDTH as i32, WINDOW_HEIGHT as i32);
 
             gl::ClearColor(1.0, 1.0, 1.0, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
             let model_matrix = Matrix4::identity();
             let view_matrix = Matrix4::look_at(
                 Point3 {
-                    x: 0.0,
-                    y: 0.0,
-                    z: 5.0,
+                    x: camera_x,
+                    y: camera_y,
+                    z: camera_z,
                 },
                 Point3 {
-                    x: 0.0,
-                    y: 0.0,
-                    z: 0.0,
+                    x: 0.5,
+                    y: 0.5,
+                    z: 0.5,
                 },
                 Vector3 {
                     x: 0.0,
-                    y: 1.0,
-                    z: 0.0,
+                    y: 0.0,
+                    z: 1.0,
                 },
             );
             let projection_matrix: Matrix4 = perspective(
@@ -178,6 +255,22 @@ fn main() {
                         "Mouse Position: ({:.1}, {:.1})",
                         mouse_pos[0], mouse_pos[1]
                     ));
+
+                    ui.separator();
+
+                    ui.checkbox(imgui::im_str!("Depth Test"), &mut depth_test);
+                    ui.checkbox(imgui::im_str!("Blend"), &mut blend);
+                    ui.checkbox(imgui::im_str!("Wireframe"), &mut wireframe);
+                    ui.checkbox(imgui::im_str!("Culling"), &mut culling);
+
+                    ui.separator();
+
+                    imgui::Slider::new(imgui::im_str!("Camera X"), -5.0..=5.0)
+                        .build(&ui, &mut camera_x);
+                    imgui::Slider::new(imgui::im_str!("Camera Y"), -5.0..=5.0)
+                        .build(&ui, &mut camera_y);
+                    imgui::Slider::new(imgui::im_str!("Camera Z"), -5.0..=5.0)
+                        .build(&ui, &mut camera_z);
                 });
 
             imgui_sdl2_context.prepare_render(&ui, &window);
