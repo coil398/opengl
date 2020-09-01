@@ -164,7 +164,21 @@ fn main() {
 
             imgui::Window::new(imgui::im_str!("Information"))
                 .size([300.0, 200.0], imgui::Condition::FirstUseEver)
-                .build(&ui, || {});
+                .build(&ui, || {
+                    ui.text(imgui::im_str!("OpenGL Test App ver 1.0"));
+                    ui.separator();
+                    ui.text(imgui::im_str!("FPS: {:.1}", ui.io().framerate));
+                    let display_size = ui.io().display_size;
+                    ui.text(format!(
+                        "Display Size: ({:.1}, {:.1})",
+                        display_size[0], display_size[1]
+                    ));
+                    let mouse_pos = ui.io().mouse_pos;
+                    ui.text(format!(
+                        "Mouse Position: ({:.1}, {:.1})",
+                        mouse_pos[0], mouse_pos[1]
+                    ));
+                });
 
             imgui_sdl2_context.prepare_render(&ui, &window);
             renderer.render(ui);
